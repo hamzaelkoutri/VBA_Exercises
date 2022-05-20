@@ -1,0 +1,145 @@
+Option Explicit
+
+Private Function n(strike As Double, S As Double, sd As Double, r As Double, days As Double) As Double
+  Dim ls, lx, sd2, T As Double
+  ls = Log(S)
+  lx = Log(strike)
+  T = days / 365
+  sd2 = pow(sd, 2)
+  n = ls - lx + r * T + sd2 * T / 2
+End Function
+
+Function bsdelta(strike As Double, S As Double, sd As Double, r As Double, days As Double) As Double
+    Dim nn, sqT, d, d1 As Double
+    nn = n(strike, S, sd, r, days)
+    sqT = sqrt(days / 365)
+    d = sd * sqT
+    d1 = nn / d
+    bsdelta = normaldist(d1)
+End Function
+
+Private Function delta2(n As Double, sd As Double, days As Double) As Double
+    Dim sqT, d, d1 As Double
+    sqT = sqrt(days / 365)
+    d = sd * sqT
+    d1 = n / d
+    delta2 = normaldist(d1)
+End Function
+
+Private Function nd2(n As Double, sd As Double, days As Double)
+  Dim sqrtT, d, d1, d2 As Double
+  sqrtT = sqrt(days / 365)
+  d = sd * sqrtT
+  d1 = n / d
+  d2 = d1 - sd * sqrtT
+  nd2 = normaldist(d2)
+End Function
+
+Function bond(strike As Double, S As Double, sd As Double, r As Double, days As Double) As Double
+    Dim nn, T, nd1, nnd2 As Double
+    nn = n(strike, S, sd, r, days)
+    T = days / 365
+    nd1 = delta2((nn), sd, days)
+    nnd2 = nd2((nn), sd, days)
+    bond = -strike * Exp(-r * T) * nnd2
+End Function
+
+Function callvalue(strike As Double, S As Double, sd As Double, r As Double, days As Double) As Double
+    Dim nn, T, nd1, B As Double
+    nn = n(strike, S, sd, r, days)
+    T = days / 365
+    nd1 = delta2((nn), sd, days)
+    B = bond(strike, S, sd, r, days)
+    callvalue = S * nd1 + B
+End Function
+
+
+Function putvalue(strike As Double, S As Double, sd As Double, r As Double, days As Double) As Double
+    Dim T, callv As Double
+    T = days / 365
+    callv = callvalue(strike, S, sd, r, days)
+    putvalue = strike * Exp(-r * T) - S + callv
+End Function
+
+Private Function sqrt(v As Double) As Double
+  sqrt = v ^ 0.5
+End Function
+
+Private Function pow(a As Double, B As Double) As Double
+  pow = a ^ B
+End Function
+
+Function normaldist(zz As Double) As Double
+    'cdf of 0 is 0.5
+    If (zz = 0) Then
+      normaldist = 0.5
+      Exit Function
+    End If
+    
+    Dim z As Double
+
+    z = zz  'zz is input variable,  use z for calculations
+    If (zz < 0) Then
+        z = -zz  'change negative values to positive
+    End If
+    
+    Dim p, b1, b2, b3, b4, b5 As Double
+    'set constants
+    p = 0.2316419
+    b1 = 0.31938153
+    b2 = -0.356563782
+    b3 = 1.781477937
+    b4 = -1.821255978
+    b5 = 1.330274428
+    
+    Dim f, ff, s1, s2, s3, s4, s5 As Double
+    Dim M_PI As Double
+    M_PI = 3.14159
+    'CALCULATIONS
+    f = 1 / sqrt(2 * M_PI)
+    ff = Exp(-pow(z, 2) / 2) * f
+    s1 = b1 / (1 + p * z)
+    s2 = b2 / pow((1 + p * z), 2)
+    s3 = b3 / pow((1 + p * z), 3)
+    s4 = b4 / pow((1 + p * z), 4)
+    s5 = b5 / pow((1 + p * z), 5)
+    
+     Dim sz As Double
+    'sz is the right-tail approximation
+     sz = ff * (s1 + s2 + s3 + s4 + s5)
+
+    If (zz < 0) Then
+      'cdf of negative input is right-tail of input's absolute value
+      normaldist = sz
+    Else
+      'cdf of positive input is one minus right-tail
+       normaldist = (1 - sz)
+    End If
+
+End Function
+
+Function bsdeltat(S As Double, sd As Double, r As Double, T As Double) As Double
+Dim Eps, sdT, rsquare, tdays As Double
+Eps = Rnd()
+tdays = T / 252
+sdT = sd * sqrt(tdays)
+rsquare = r * r
+bsdeltat = S * Exp((r - rsquare / 2) * tdays + sdT * Eps)
+End Function
+
+Function indicator(B As Double, S As Double) As Double
+If (B < S) Then
+indicator = 1
+Else
+indicator = 0
+End If
+End Function
+Function v0(S As Double, K As Double, B As Double, r As Double, T As Double) As Double
+Dim SK, Bar As Double
+SK = (S - K) * indicator(K, S)
+Bar = indicator(B, S)
+v0 = SK * Bar * Exp(-r * T)
+End Function
+Sub BSM()
+
+End Sub
